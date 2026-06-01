@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { BookOpen, User, CreditCard, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react'
+import { BookOpen, User, CreditCard, CheckCircle, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react'
 
 const EXAMS = ['JEE', 'NEET', 'UPSC', 'GATE', 'SSC', 'CAT', 'CDS', 'Class 11/12', 'Others']
 
@@ -11,6 +11,7 @@ export default function SellerOnboardPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     displayName: user?.fullName || '', bio: '', examSpecialization: [] as string[],
     bankAccount: '', bankIfsc: '', upiId: ''
@@ -23,13 +24,24 @@ export default function SellerOnboardPage() {
 
   const finish = async () => {
     setSaving(true)
-    const res = await fetch('/api/seller/onboard', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (data.success) { await refresh(); router.push('/seller/dashboard') }
+    setError('')
+    try {
+      const res = await fetch('/api/seller/onboard', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
+      const data = await res.json()
+      if (res.ok && data.success) { 
+        window.location.href = '/seller/dashboard'
+      } else {
+        setError(data.error || 'Onboarding failed. Please try again.')
+      }
+    } catch (err) {
+      console.error("Seller onboard unexpected error:", err)
+      setError('A network error occurred. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const STEPS = [
@@ -61,6 +73,12 @@ export default function SellerOnboardPage() {
         </div>
 
         <div className="glass rounded-3xl p-8 border border-white/8">
+          {error && (
+            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 text-red-400 text-sm">
+              <AlertCircle size={15} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
           {step === 1 && (
             <div className="space-y-5">
               <h2 className="font-semibold text-cream mb-4">Basic Information</h2>
