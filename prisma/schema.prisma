@@ -1,0 +1,454 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+/*earlier version*/
+
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookStatus {
+  ACTIVE
+  PAUSED
+  SOLD
+  DELETED
+  PENDING_REVIEW
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  PICKUP_SCHEDULED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ImageType {
+  FRONT_COVER
+  BACK_COVER
+  INSIDE
+  OTHER
+}
+
+enum ReportReason {
+  FRAUD
+  FAKE_BOOK
+  ABUSIVE
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum DiscountType {
+  FLAT
+  PERCENTAGE
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  phone             String?   @unique
+  passwordHash      String?
+  fullName          String
+  profilePictureUrl String?
+  city              String?
+  state             String?
+  role              Role      @default(BUYER)
+  isSeller          Boolean   @default(false)
+  isEmailVerified   Boolean   @default(false)
+  isPhoneVerified   Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  isSuspended       Boolean   @default(false)
+  isBlocked         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+
+  sellerProfile   SellerProfile?
+  books           Book[]
+  addresses       Address[]
+  buyerOrders     Order[]         @relation("BuyerOrders")
+  sellerOrders    Order[]         @relation("SellerOrders")
+  cart            Cart[]
+  wishlist        Wishlist[]
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  messages        Message[]
+  givenReviews    Review[]        @relation("BuyerReviews")
+  receivedReviews Review[]        @relation("SellerReviews")
+  notifications   Notification[]
+  filedReports    Report[]        @relation("FiledReports")
+  reportedReports Report[]        @relation("ReportedUser")
+  payouts         Payout[]        @relation("SellerPayouts")
+  approvedPayouts Payout[]        @relation("AdminPayouts")
+  couponsCreated  Coupon[]
+  trackingUpdates OrderTracking[]
+}
+
+model SellerProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  displayName        String
+  bio                String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  collegeIdUrl       String?
+  govtIdUrl          String?
+  bankAccountNumber  String?
+  bankIfsc           String?
+  upiId              String?
+  avgRating          Float              @default(0)
+  totalReviews       Int                @default(0)
+  totalBooksSold     Int                @default(0)
+  totalEarnings      Float              @default(0)
+  pendingPayout      Float              @default(0)
+  createdAt          DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Book {
+  id               String           @id @default(uuid())
+  sellerId         String
+  title            String
+  author           String
+  edition          String?
+  publisher        String?
+  isbn             String?
+  examCategory     String
+  subject          String?
+  conditionScore   Int
+  conditionNotes   String?
+  description      String?
+  marketPrice      Float
+  sellingPrice     Float
+  city             String
+  state            String?
+  status           BookStatus       @default(ACTIVE)
+  moderationStatus ModerationStatus @default(APPROVED)
+  rejectionReason  String?
+  viewCount        Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  soldAt           DateTime?
+
+  seller    User        @relation(fields: [sellerId], references: [id])
+  images    BookImage[]
+  orders    Order[]
+  carts     Cart[]
+  wishlists Wishlist[]
+  reviews   Review[]
+  reports   Report[]
+  conversations Conversation[]
+}
+
+model BookImage {
+  id        String    @id @default(uuid())
+  bookId    String
+  imageUrl  String
+  imageType ImageType
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model Address {
+  id           String  @id @default(uuid())
+  userId       String
+  label        String?
+  fullName     String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pinCode      String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+}
+
+model Order {
+  id                      String        @id @default(uuid())
+  orderNumber             String        @unique
+  buyerId                 String
+  sellerId                String
+  bookId                  String
+  addressId               String?
+  deliveryAddressSnapshot Json
+  sellingPrice            Float
+  platformFee             Float         @default(0)
+  sellerPayout            Float
+  couponCode              String?
+  discountAmount          Float         @default(0)
+  deliveryCharge          Float         @default(0)
+  totalAmount             Float
+  paymentStatus           PaymentStatus @default(PENDING)
+  orderStatus             OrderStatus   @default(PLACED)
+  cancellationReason      String?
+  cancelledBy             String?
+  createdAt               DateTime      @default(now())
+  deliveredAt             DateTime?
+
+  buyer    User      @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller   User      @relation("SellerOrders", fields: [sellerId], references: [id])
+  book     Book      @relation(fields: [bookId], references: [id])
+  address  Address?  @relation(fields: [addressId], references: [id])
+  payment  Payment?
+  tracking OrderTracking[]
+  review   Review?
+  couponUsage CouponUsage?
+  pickup   PickupSchedule?
+  payout   Payout?
+}
+
+model OrderTracking {
+  id          String   @id @default(uuid())
+  orderId     String
+  status      String
+  description String?
+  updatedById String?
+  timestamp   DateTime @default(now())
+
+  order     Order  @relation(fields: [orderId], references: [id])
+  updatedBy User?  @relation(fields: [updatedById], references: [id])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String        @unique
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amount            Float
+  currency          String        @default("INR")
+  method            String?
+  status            PaymentStatus @default(PENDING)
+  refundId          String?
+  refundAmount      Float?
+  createdAt         DateTime      @default(now())
+  capturedAt        DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Cart {
+  id      String   @id @default(uuid())
+  userId  String
+  bookId  String
+  addedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId])
+}
+
+model Wishlist {
+  id          String   @id @default(uuid())
+  userId      String
+  bookId      String
+  priceAtSave Float
+  savedAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId])
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  buyerId       String
+  sellerId      String
+  bookId        String?
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  buyer    User      @relation("BuyerConversations", fields: [buyerId], references: [id])
+  seller   User      @relation("SellerConversations", fields: [sellerId], references: [id])
+  book     Book?     @relation(fields: [bookId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  imageUrl       String?
+  isRead         Boolean  @default(false)
+  sentAt         DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+}
+
+model Review {
+  id              String   @id @default(uuid())
+  orderId         String   @unique
+  buyerId         String
+  sellerId        String
+  bookId          String
+  rating          Int
+  title           String?
+  comment         String?
+  imageUrls       String[]
+  sellerReply     String?
+  sellerRepliedAt DateTime?
+  isVerified      Boolean  @default(true)
+  isFlagged       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id])
+  buyer  User  @relation("BuyerReviews", fields: [buyerId], references: [id])
+  seller User  @relation("SellerReviews", fields: [sellerId], references: [id])
+  book   Book  @relation(fields: [bookId], references: [id])
+  reports Report[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Report {
+  id               String       @id @default(uuid())
+  reporterId       String
+  reportedUserId   String?
+  reportedBookId   String?
+  reportedReviewId String?
+  reason           ReportReason
+  description      String?
+  status           ReportStatus @default(OPEN)
+  adminNote        String?
+  resolvedById     String?
+  resolvedAt       DateTime?
+  createdAt        DateTime     @default(now())
+
+  reporter     User    @relation("FiledReports", fields: [reporterId], references: [id])
+  reportedUser User?   @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reportedBook Book?   @relation(fields: [reportedBookId], references: [id])
+  reportedReview Review? @relation(fields: [reportedReviewId], references: [id])
+}
+
+model Coupon {
+  id              String       @id @default(uuid())
+  code            String       @unique
+  description     String?
+  discountType    DiscountType
+  discountValue   Float
+  minOrderAmount  Float        @default(0)
+  maxDiscountCap  Float?
+  usageLimit      Int?
+  usageCount      Int          @default(0)
+  perUserLimit    Int          @default(1)
+  validFrom       DateTime
+  validUntil      DateTime?
+  isActive        Boolean      @default(true)
+  createdById     String
+  createdAt       DateTime     @default(now())
+
+  createdBy   User          @relation(fields: [createdById], references: [id])
+  usages      CouponUsage[]
+}
+
+model CouponUsage {
+  id             String   @id @default(uuid())
+  couponId       String
+  userId         String
+  orderId        String   @unique
+  discountGiven  Float
+  usedAt         DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+}
+
+model PickupSchedule {
+  id                 String   @id @default(uuid())
+  orderId            String   @unique
+  sellerId           String
+  scheduledDate      DateTime
+  timeSlot           String
+  agentName          String?
+  agentPhone         String?
+  status             String   @default("SCHEDULED")
+  pickupConfirmedAt  DateTime?
+  createdAt          DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Payout {
+  id               String   @id @default(uuid())
+  sellerId         String
+  orderId          String?  @unique
+  amount           Float
+  bankAccount      String
+  upiId            String?
+  status           String   @default("REQUESTED")
+  razorpayPayoutId String?
+  adminApprovedById String?
+  requestedAt      DateTime @default(now())
+  processedAt      DateTime?
+
+  seller  User  @relation("SellerPayouts", fields: [sellerId], references: [id])
+  admin   User? @relation("AdminPayouts", fields: [adminApprovedById], references: [id])
+  order   Order? @relation(fields: [orderId], references: [id])
+}
