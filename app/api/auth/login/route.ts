@@ -22,7 +22,11 @@ export async function POST(req: NextRequest) {
     const token = signToken({ userId: user.id, email: user.email, role: user.role })
     const { passwordHash: _, ...safeUser } = user
     const response = successResponse({ user: safeUser, token })
-    response.cookies.set('auth-token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 60 * 60 * 24 * 7, path: '/' })
+    response.cookies.set('auth-token', token, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', sameSite: 'strict', 
+      maxAge: 60 * 60 * 24 * 7, 
+      path: '/' })
     return response
   } catch (error) {
     if (error instanceof z.ZodError) return errorResponse(error instanceof z.ZodError ? error.issues[0]?.message || 'Validation failed' : 'Validation failed')

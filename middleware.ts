@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { verifyTokenEdge } from '@/lib/auth-edge'
 
 const PROTECTED_ROUTES = ['/dashboard', '/cart', '/orders', '/profile', '/wishlist', '/seller', '/admin', '/checkout', '/messages', '/notifications']
 const SELLER_ROUTES = ['/seller']
 const ADMIN_ROUTES = ['/admin']
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
   if (!isProtected) return NextResponse.next()
@@ -18,7 +18,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const payload = verifyToken(token)
+  const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+  const payload = await verifyTokenEdge(token, jwtSecret)
   if (!payload) {
     const url = req.nextUrl.clone()
     url.pathname = '/auth/login'

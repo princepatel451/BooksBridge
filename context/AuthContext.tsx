@@ -29,18 +29,33 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  console.log("AuthProvider rendered")
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   const refresh = async () => {
-    try {
-      const res = await fetch('/api/auth/me')
-      if (res.ok) { const data = await res.json(); setUser(data.data.user) }
-      else setUser(null)
-    } catch { setUser(null) } finally { setLoading(false) }
-  }
+  try {
 
-  useEffect(() => { refresh() }, [])
+    const res = await fetch('/api/auth/me')
+
+    const data = await res.json()
+
+    if (res.ok) {
+      setUser(data.data.user)
+    } else {
+      setUser(null)
+    }
+  } catch (err) {
+    console.log(err)
+    setUser(null)
+  } finally {
+    setLoading(false)
+  }
+}
+
+  useEffect(() => {
+  refresh()
+}, [])
 
   const login = async (email: string, password: string) => {
     try {

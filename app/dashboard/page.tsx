@@ -13,6 +13,10 @@ interface Book { id: string; title: string; author: string; edition?: string; ex
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
+  console.log("Dashboard Render")
+  console.log("User:", user)
+  console.log("Loading:", loading)
+  
   const router = useRouter()
   const [trending, setTrending] = useState<Book[]>([])
   const [nearby, setNearby] = useState<Book[]>([])

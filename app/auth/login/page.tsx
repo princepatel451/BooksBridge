@@ -15,11 +15,25 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true); setError('')
-    const result = await login(form.email, form.password)
-    setLoading(false)
-    if (result.success) router.push('/dashboard')
-    else setError(result.error || 'Login failed')
+    setError('')
+    setLoading(true)
+    try {
+      const result = await login(form.email, form.password)
+      console.log("LOGIN RESULT:", result)
+
+      if (result.success) {
+        console.log("REDIRECTING TO DASHBOARD")
+        router.push('/dashboard')
+      } else {
+        console.log("LOGIN FAILED")
+        setError(result.error || 'Login failed')
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error("Login unexpected error:", err)
+      setError('An unexpected error occurred. Please try again.')
+      setLoading(false)
+    }
   }
 
   return (
