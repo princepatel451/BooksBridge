@@ -72,7 +72,7 @@ export function Footer() {
             <ul className="space-y-3">
               {[
                 { Icon: Mail, text: 'support@bookbridge.in' },
-                { Icon: Phone, text: '+91 98765 43210' },
+                { Icon: Phone, text: '+91 6202618910' },
                 { Icon: MapPin, text: 'India' },
               ].map(({ Icon, text }) => (
                 <li key={text} className="flex items-center gap-2.5 text-white/40 text-sm">
@@ -87,8 +87,8 @@ export function Footer() {
         <div className="divider-gold my-10" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/25">
-          <span>© 2025 BookBridge. All rights reserved.</span>
-          <span>Made with care for Indian students</span>
+          <span>© 2026 BookBridge. All rights reserved.</span>
+          <span>Made with Love for Indian students</span>
         </div>
       </div>
     </footer>

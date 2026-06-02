@@ -18,6 +18,19 @@ export default function BooksPage() {
   const [loading, setLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({ search: '', exam: '', condition: '', minPrice: '', maxPrice: '', sort: 'latest' })
+  const [searchVal, setSearchVal] = useState('')
+
+  // Debounce search query to prevent database query floods on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(f => {
+        if (f.search === searchVal) return f
+        return { ...f, search: searchVal }
+      })
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchVal])
 
   const fetchBooks = async () => {
     setLoading(true)
@@ -31,7 +44,7 @@ export default function BooksPage() {
 
   useEffect(() => { fetchBooks() }, [filters, page])
   const setFilter = (k: string, v: string) => { setFilters(f => ({ ...f, [k]: v })); setPage(1) }
-  const clearFilters = () => { setFilters({ search: '', exam: '', condition: '', minPrice: '', maxPrice: '', sort: 'latest' }); setPage(1) }
+  const clearFilters = () => { setSearchVal(''); setFilters({ search: '', exam: '', condition: '', minPrice: '', maxPrice: '', sort: 'latest' }); setPage(1) }
   const activeFilters = Object.entries(filters).filter(([k, v]) => v && k !== 'sort').length
 
   return (
@@ -43,7 +56,7 @@ export default function BooksPage() {
             {/* Search */}
             <div className="flex-1 relative max-w-lg">
               <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-              <input value={filters.search} onChange={e => setFilter('search', e.target.value)}
+              <input value={searchVal} onChange={e => setSearchVal(e.target.value)}
                 className="input-dark w-full pl-11 pr-4 py-2.5 rounded-xl text-sm" placeholder="Search books, author, exam..." />
             </div>
             {/* Filter toggle */}

@@ -32,7 +32,8 @@ export default function SellerOnboardPage() {
       })
       const data = await res.json()
       if (res.ok && data.success) { 
-        window.location.href = '/seller/dashboard'
+        await refresh()
+        router.push('/seller/dashboard')
       } else {
         setError(data.error || 'Onboarding failed. Please try again.')
       }
