@@ -208,7 +208,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {loadingAllBooks
               ? Array(8).fill(0).map((_, i) => <BookCardSkeleton key={i} />)
               : allBooks.length > 0
@@ -233,7 +233,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {loadingTrending
               ? Array(4).fill(0).map((_, i) => <BookCardSkeleton key={i} />)
               : trendingBooks.length > 0

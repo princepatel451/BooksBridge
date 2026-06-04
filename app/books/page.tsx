@@ -132,7 +132,7 @@ export default function BooksPage() {
           <span className="text-white/40 text-sm">{loading ? 'Loading...' : `${total} books found`}</span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {loading ? Array(12).fill(0).map((_, i) => <BookCardSkeleton key={i} />)
             : books.length > 0 ? books.map(b => <BookCard key={b.id} book={b} />)
             : (

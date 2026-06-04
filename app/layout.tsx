@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
+import { ToastProvider } from '@/components/ui/ToastProvider'
 
 export const metadata: Metadata = {
   title: 'BookBridge — Buy & Sell Exam Books',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
+          <ToastProvider />
           <Navbar />
           <main className="min-h-screen">{children}</main>
           <Footer />

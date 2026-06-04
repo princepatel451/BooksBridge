@@ -2,10 +2,8 @@
  * Seed script — run with: npx ts-node scripts/seed.ts
  * Creates an admin user and sample book listings for development
  */
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding BookBridge database...')

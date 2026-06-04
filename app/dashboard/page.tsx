@@ -145,7 +145,7 @@ export default function DashboardPage() {
               View All <ChevronRight size={11} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {booksLoading ? Array(4).fill(0).map((_, i) => <BookCardSkeleton key={i} />)
               : trending.length > 0 ? trending.map(b => <BookCard key={b.id} book={b} />)
               : <div className="col-span-4 text-center py-8 text-white/25 text-sm">No trending books yet</div>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               View All <ChevronRight size={11} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {booksLoading ? Array(4).fill(0).map((_, i) => <BookCardSkeleton key={i} />)
               : recent.length > 0 ? recent.slice(0, 8).map(b => <BookCard key={b.id} book={b} />)
               : <div className="col-span-4 text-center py-8 text-white/25 text-sm">No books yet</div>

@@ -19,6 +19,11 @@ const createBookSchema = z.object({
   sellingPrice: z.number().positive(),
   city: z.string().min(1),
   state: z.string().optional(),
+  images: z.array(z.object({
+    imageUrl: z.string().url(),
+    imageType: z.enum(['FRONT_COVER', 'BACK_COVER', 'INSIDE', 'OTHER']),
+    sortOrder: z.number().optional()
+  })).optional()
 })
 
 export async function GET(req: NextRequest) {
@@ -76,13 +81,27 @@ export async function POST(req: NextRequest) {
     const payload = requireAuth(req)
     const body = await req.json()
     const data = createBookSchema.parse(body)
+    const { images, ...bookData } = data
 
     const book = await prisma.book.create({
-      data: { ...data, sellerId: payload.userId },
+      data: { 
+        ...bookData, 
+        sellerId: payload.userId,
+        images: images ? {
+          create: images.map(img => ({
+            imageUrl: img.imageUrl,
+            imageType: img.imageType,
+            sortOrder: img.sortOrder || 0
+          }))
+        } : undefined
+      },
+      include: {
+        images: true
+      }
     })
     return successResponse({ book }, 201)
   } catch (error) {
-    if (error instanceof z.ZodError) return errorResponse(error instanceof z.ZodError ? error.issues[0]?.message || 'Validation failed' : 'Validation failed')
+    if (error instanceof z.ZodError) return errorResponse(error.issues[0]?.message || 'Validation failed')
     return handleApiError(error)
   }
 }

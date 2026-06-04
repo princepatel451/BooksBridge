@@ -5,7 +5,9 @@ import { ShoppingCart, Zap, MessageCircle, Heart, ShieldCheck, Star, MapPin, Che
 import { formatPrice, calculateDiscount, getConditionLabel, getConditionColor, formatDate, cn } from '@/lib/utils'
 import { StarRating } from '@/components/ui/StarRating'
 import { BookCardSkeleton } from '@/components/ui/Skeleton'
+import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface BookDetail {
   id: string; title: string; author: string; edition?: string; publisher?: string; isbn?: string
@@ -19,12 +21,12 @@ interface BookDetail {
 export default function BookDetailPage() {
   const { bookId } = useParams()
   const router = useRouter()
+  const { user } = useAuth()
   const [book, setBook] = useState<BookDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
   const [wishlisted, setWishlisted] = useState(false)
   const [addingCart, setAddingCart] = useState(false)
-  const [cartMsg, setCartMsg] = useState('')
 
   useEffect(() => {
     fetch(`/api/books/${bookId}`)
@@ -33,14 +35,58 @@ export default function BookDetailPage() {
       .finally(() => setLoading(false))
   }, [bookId])
 
+  useEffect(() => {
+    if (user && bookId) {
+      fetch('/api/wishlist')
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            const isSaved = d.data.items.some((i: any) => i.bookId === bookId)
+            setWishlisted(isSaved)
+          }
+        })
+        .catch(err => console.error(err))
+    }
+  }, [bookId, user])
+
   const addToCart = async () => {
     setAddingCart(true)
     const res = await fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId }) })
     const data = await res.json()
     setAddingCart(false)
-    if (data.success) { setCartMsg('Added to cart!'); setTimeout(() => setCartMsg(''), 3000) }
+    if (data.success) {
+      toast.success('Added to cart!')
+    }
     else if (res.status === 401) router.push('/auth/login')
-    else setCartMsg(data.error)
+    else toast.error(data.error || 'Failed to add to cart')
+  }
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
+
+    const nextState = !wishlisted
+    setWishlisted(nextState)
+
+    try {
+      const res = await fetch('/api/wishlist', {
+        method: nextState ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(nextState ? 'Added to wishlist!' : 'Removed from wishlist!')
+      } else {
+        setWishlisted(!nextState)
+        toast.error(data.error || 'Failed to update wishlist')
+      }
+    } catch {
+      setWishlisted(!nextState)
+      toast.error('Network error updating wishlist')
+    }
   }
 
   if (loading) return (
@@ -134,7 +180,7 @@ export default function BookDetailPage() {
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="badge badge-gold">{book.examCategory}</div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setWishlisted(!wishlisted)} className={`w-9 h-9 glass rounded-xl flex items-center justify-center transition-all hover:scale-110 ${wishlisted ? 'text-red-400' : 'text-white/40'}`}>
+                  <button onClick={toggleWishlist} className={`w-9 h-9 glass rounded-xl flex items-center justify-center transition-all hover:scale-110 ${wishlisted ? 'text-red-400' : 'text-white/40'}`}>
                     <Heart size={15} className={wishlisted ? 'fill-current' : ''} />
                   </button>
                   <button className="w-9 h-9 glass rounded-xl flex items-center justify-center text-white/40 hover:text-cream transition-colors">
@@ -174,9 +220,6 @@ export default function BookDetailPage() {
               </div>
 
               {/* Action Buttons */}
-              {cartMsg && (
-                <div className="text-center text-xs text-emerald-400 mb-3 bg-emerald-400/10 rounded-lg py-2">{cartMsg}</div>
-              )}
               <div className="space-y-2.5">
                 <Link href={`/checkout?bookId=${book.id}`} className="btn-gold w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
                   <Zap size={15} /> Buy Now
@@ -193,29 +236,31 @@ export default function BookDetailPage() {
             {/* Seller Card */}
             <div className="glass rounded-2xl p-6 border border-white/5">
               <h3 className="text-xs text-white/40 uppercase tracking-wider mb-4">Seller Information</h3>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold/30 to-gold-muted/20 flex items-center justify-center text-lg font-bold text-gold flex-shrink-0">
-                  {book.seller.fullName[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-cream text-sm">{book.seller.sellerProfile?.displayName || book.seller.fullName}</span>
-                    {book.seller.sellerProfile?.verificationStatus === 'VERIFIED' && (
-                      <ShieldCheck size={13} className="text-blue-400 flex-shrink-0" />
-                    )}
+              <Link href={`/sellers/${book.seller.id}`} className="group block cursor-pointer">
+                <div className="flex items-start gap-4 group-hover:opacity-85 transition-opacity">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold/30 to-gold-muted/20 flex items-center justify-center text-lg font-bold text-gold flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    {book.seller.fullName[0]}
                   </div>
-                  {book.seller.sellerProfile && (
-                    <div className="flex items-center gap-3 text-xs text-white/40">
-                      <span className="flex items-center gap-1"><Star size={10} className="text-gold" />{book.seller.sellerProfile.avgRating.toFixed(1)} ({book.seller.sellerProfile.totalReviews})</span>
-                      <span className="flex items-center gap-1"><Award size={10} />{book.seller.sellerProfile.totalBooksSold} sold</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-cream text-sm group-hover:text-gold transition-colors">{book.seller.sellerProfile?.displayName || book.seller.fullName}</span>
+                      {book.seller.sellerProfile?.verificationStatus === 'VERIFIED' && (
+                        <ShieldCheck size={13} className="text-blue-400 flex-shrink-0" />
+                      )}
                     </div>
-                  )}
-                  <div className="flex items-center gap-1 text-white/30 text-xs mt-1"><MapPin size={10} />{book.seller.city}</div>
+                    {book.seller.sellerProfile && (
+                      <div className="flex items-center gap-3 text-xs text-white/40">
+                        <span className="flex items-center gap-1"><Star size={10} className="text-gold" />{book.seller.sellerProfile.avgRating.toFixed(1)} ({book.seller.sellerProfile.totalReviews})</span>
+                        <span className="flex items-center gap-1"><Award size={10} />{book.seller.sellerProfile.totalBooksSold} sold</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 text-white/30 text-xs mt-1"><MapPin size={10} />{book.seller.city}</div>
+                  </div>
                 </div>
-              </div>
-              {book.seller.sellerProfile?.bio && (
-                <p className="text-white/30 text-xs mt-3 leading-relaxed">{book.seller.sellerProfile.bio}</p>
-              )}
+                {book.seller.sellerProfile?.bio && (
+                  <p className="text-white/30 text-xs mt-3 leading-relaxed group-hover:text-white/40 transition-colors">{book.seller.sellerProfile.bio}</p>
+                )}
+              </Link>
             </div>
 
             {/* Safety */}

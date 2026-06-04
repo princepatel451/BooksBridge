@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { BookOpen, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -23,15 +24,20 @@ export default function LoginPage() {
 
       if (result.success) {
         console.log("REDIRECTING TO DASHBOARD")
+        toast.success('Logged in successfully!')
         router.push('/dashboard')
       } else {
         console.log("LOGIN FAILED")
-        setError(result.error || 'Login failed')
+        const errMsg = result.error || 'Login failed'
+        setError(errMsg)
+        toast.error(errMsg)
         setLoading(false)
       }
     } catch (err) {
       console.error("Login unexpected error:", err)
-      setError('An unexpected error occurred. Please try again.')
+      const errMsg = 'An unexpected error occurred. Please try again.'
+      setError(errMsg)
+      toast.error(errMsg)
       setLoading(false)
     }
   }
@@ -49,12 +55,6 @@ export default function LoginPage() {
         </div>
 
         <div className="glass rounded-3xl p-8 border border-white/8">
-          {error && (
-            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 text-red-400 text-sm">
-              <AlertCircle size={15} className="flex-shrink-0" />
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

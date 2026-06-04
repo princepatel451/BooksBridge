@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { BookOpen, Mail, Lock, User, Phone, MapPin, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -15,12 +16,23 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (form.password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (form.password.length < 8) { 
+      const errMsg = 'Password must be at least 8 characters'
+      setError(errMsg)
+      toast.error(errMsg)
+      return 
+    }
     setLoading(true); setError('')
     const result = await register(form)
     setLoading(false)
-    if (result.success) router.push(form.isSeller ? '/seller/onboard' : '/dashboard')
-    else setError(result.error || 'Registration failed')
+    if (result.success) {
+      toast.success('Registered successfully!')
+      router.push(form.isSeller ? '/seller/onboard' : '/dashboard')
+    } else {
+      const errMsg = result.error || 'Registration failed'
+      setError(errMsg)
+      toast.error(errMsg)
+    }
   }
 
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
@@ -37,11 +49,6 @@ export default function RegisterPage() {
         </div>
 
         <div className="glass rounded-3xl p-8 border border-white/8">
-          {error && (
-            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 text-red-400 text-sm">
-              <AlertCircle size={15} className="flex-shrink-0" />{error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

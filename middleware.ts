@@ -7,7 +7,7 @@ const ADMIN_ROUTES = ['/admin']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
+  const isProtected = PROTECTED_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
   if (!isProtected) return NextResponse.next()
 
   const token = req.cookies.get('auth-token')?.value
@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Role checks for seller and admin routes
-  if (SELLER_ROUTES.some(r => pathname.startsWith(r)) && payload.role !== 'SELLER' && payload.role !== 'ADMIN') {
+  if (SELLER_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/')) && payload.role !== 'SELLER' && payload.role !== 'ADMIN') {
     // Allow onboarding for buyers wanting to become sellers
     if (!pathname.startsWith('/seller/onboard')) {
       return NextResponse.redirect(new URL('/seller/onboard', req.url))

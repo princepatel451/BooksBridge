@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Heart, Trash2, BookOpen, ShoppingCart, ArrowDown } from 'lucide-react'
 import { formatPrice, calculateDiscount } from '@/lib/utils'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface WishlistItem { id: string; bookId: string; priceAtSave: number; book: { id: string; title: string; author: string; sellingPrice: number; marketPrice: number; status: string; images: { imageUrl: string }[]; seller: { fullName: string } } }
 
@@ -20,13 +21,36 @@ export default function WishlistPage() {
   }, [])
 
   const remove = async (bookId: string) => {
-    await fetch('/api/wishlist', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId }) })
-    setItems(prev => prev.filter(i => i.bookId !== bookId))
+    try {
+      const res = await fetch('/api/wishlist', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId }) })
+      const data = await res.json()
+      if (data.success) {
+        setItems(prev => prev.filter(i => i.bookId !== bookId))
+        toast.success('Removed from wishlist!')
+      } else {
+        toast.error(data.error || 'Failed to remove from wishlist')
+      }
+    } catch {
+      toast.error('Network error removing item')
+    }
   }
 
   const addToCart = async (bookId: string) => {
-    const res = await fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId }) })
-    if (res.status === 401) router.push('/auth/login')
+    try {
+      const res = await fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId }) })
+      const data = await res.json()
+      if (res.status === 401) {
+        router.push('/auth/login')
+        return
+      }
+      if (data.success) {
+        toast.success('Added to cart!')
+      } else {
+        toast.error(data.error || 'Failed to add to cart')
+      }
+    } catch {
+      toast.error('Network error adding to cart')
+    }
   }
 
   return (
